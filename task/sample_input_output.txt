@@ -1,0 +1,64 @@
+sample input/output
+
+input:
+{
+  id: "label",
+  position: "below",
+  textAlignment: "left",
+  anchor: "distance"
+}
+
+output:
+{
+  "text": "733mi",
+  "boundingPolygon": [
+    {
+      "x": 2.005,
+      "y": 4.413
+    },
+    {
+      "x": 2.374,
+      "y": 4.413
+    },
+    {
+      "x": 2.374,
+      "y": 4.541
+    },
+    {
+      "x": 2.005,
+      "y": 4.541
+    }
+  ]
+}
+
+input:
+{
+  id: "row",
+  position: "right",
+  tiebreaker: "first",
+  anchor: "line haul"
+}
+
+output:
+
+{
+  "text": "$1770.00",
+  "boundingPolygon": [
+    {
+      "x": 6.765,
+      "y": 1.994
+    },
+    {
+      "x": 7.315,
+      "y": 1.994
+    },
+    {
+      "x": 7.315,
+      "y": 2.122
+    },
+    {
+      "x": 6.765,
+      "y": 2.122
+    }
+  ]
+}
