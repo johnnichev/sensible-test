@@ -1,6 +1,6 @@
 {
     "id": "label",
-    "position": "below",
-    "textAlignment": "left",
-    "anchor": "distance"
+    "position": "left",
+    "textAlignment": "right",
+    "anchor": "Distance"
 }

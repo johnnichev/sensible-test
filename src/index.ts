@@ -23,10 +23,12 @@ function main() {
   if (isLabel(input)) {
     console.log('Extracting label...');
     const extractedLabel = extractLabel(input, standardizedText);
+    console.log('Extracted label:');
     console.log(extractedLabel);
   } else {
     console.log('Extracting row...');
     const extractedRow = extractRow(input, standardizedText);
+    console.log('Extracted row:');
     console.log(extractedRow);
   }
 }
