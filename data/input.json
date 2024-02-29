@@ -1,6 +1,6 @@
 {
     "id": "label",
-    "position": "right",
+    "position": "below",
     "textAlignment": "left",
-    "anchor": "Invoice Number"
+    "anchor": "distance"
 }

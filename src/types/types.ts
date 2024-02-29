@@ -24,6 +24,7 @@ export type Polygon = { x: number; y: number }[];
 
 export type StandardizedLine = {
   text: string;
+  // The bounding polygon is an array of points that represent the vertices of the polygon, we are assuming that the polygon will always be a rectangle
   boundingPolygon: Polygon;
 };
 

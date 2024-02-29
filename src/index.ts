@@ -21,9 +21,13 @@ function main() {
   const standardizedText: StandardizedText = loadStandardizedText('./data/standardized_text.json');
 
   if (isLabel(input)) {
-    return extractLabel(input, standardizedText);
+    console.log('Extracting label...');
+    const extractedLabel = extractLabel(input, standardizedText);
+    console.log(extractedLabel);
   } else {
-    return extractRow(input, standardizedText);
+    console.log('Extracting row...');
+    const extractedRow = extractRow(input, standardizedText);
+    console.log(extractedRow);
   }
 }
 
