@@ -36,18 +36,7 @@ export type StandardizedText = {
   pages: StandardizedPage[];
 };
 
-export type LabelExtractor = (
-  configuration: Label,
-  text: StandardizedText
-) => StandardizedLine;
-
-export type RowExtractor = (
-  configuration: Row,
-  text: StandardizedText
-) => StandardizedLine;
-
-
 export type AnchorLineInfo = {
   pageNumber: number;
   line: StandardizedLine;
-}
+};

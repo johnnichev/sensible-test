@@ -1,18 +1,18 @@
-import { readFileSync } from 'fs';
-import { Label, Row, StandardizedText } from './types/types';
-import { extractLabel, extractRow } from './utils/textProcessing';
+import { readFileSync } from "fs";
+import { Label, Row, StandardizedText } from "./types/types";
+import { extractLabel, extractRow } from "./utils/textProcessing";
 
 function isLabel(input: Label | Row): input is Label {
-  return input.id === 'label';
+  return input.id === "label";
 }
 
 export function getInputFromFile(filePath: string): Label | Row {
-  const fileContent = readFileSync(filePath, 'utf8');
+  const fileContent = readFileSync(filePath, "utf8");
   return JSON.parse(fileContent);
 }
 
 export function loadStandardizedText(filePath: string): StandardizedText {
-  const fileContent = readFileSync(filePath, 'utf8');
+  const fileContent = readFileSync(filePath, "utf8");
   return JSON.parse(fileContent) as StandardizedText;
 }
 
@@ -26,22 +26,24 @@ export function loadStandardizedText(filePath: string): StandardizedText {
 // - The document (0, 0) coordinate is assumed to be the top-left corner
 
 function main() {
-  const input: Label | Row = getInputFromFile('./data/input.json');
-  const standardizedText: StandardizedText = loadStandardizedText('./data/standardized_text.json');
+  const input: Label | Row = getInputFromFile("./data/input.json");
+  const standardizedText: StandardizedText = loadStandardizedText(
+    "./data/standardized_text.json",
+  );
 
   if (isLabel(input)) {
-    console.log('Extracting label...');
+    console.log("Extracting label...");
     const extractedLabel = extractLabel(input, standardizedText);
-    console.log('Extracted label:');
+    console.log("Extracted label:");
     console.log(extractedLabel);
   } else {
-    console.log('Extracting row...');
+    console.log("Extracting row...");
     const extractedRow = extractRow(input, standardizedText);
-    console.log('Extracted row:');
+    console.log("Extracted row:");
     console.log(extractedRow);
   }
 }
 
-if (process.env.NODE_ENV !== 'test') {
+if (process.env.NODE_ENV !== "test") {
   main();
 }
