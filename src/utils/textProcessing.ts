@@ -1,24 +1,18 @@
-import { Label, StandardizedText, StandardizedLine, Row, Direction, HorizontalDirection, StandardizedPage } from "../types/types";
+import { Label, StandardizedText, StandardizedLine, Row, Direction, HorizontalDirection, StandardizedPage, AnchorLineInfo } from "../types/types";
 
-type AnchorLineInfo = {
-    pageNumber: number;
-    line: StandardizedLine;
-}
 
 export function extractLabel(configuration: Label, text: StandardizedText): StandardizedLine | null {
     const { position, textAlignment, anchor } = configuration;
 
     // 1. First we need to find the anchor line
     const anchorLineInfo = findLineByText(text.pages, anchor);
-    console.log('Anchor line:', anchorLineInfo);
+    console.log('Anchor line:', anchorLineInfo?.line);
     if (!anchorLineInfo) {
         console.log('Anchor line not found');
         return null;
     }
 
     // 2. Based on the direction [position] and [textAlignement] we need to find the adjacent line
-    // The bounding polygon is assumed to be a rectangle
-    // The order of the bounding polygon is assumed to be top-left, top-right, bottom-right, bottom-left
     const adjacentLine = findAdjacentLine(text.pages[anchorLineInfo.pageNumber], anchorLineInfo.line, position, textAlignment);
     if (!adjacentLine) {
         console.log('Adjacent line not found');
@@ -29,18 +23,24 @@ export function extractLabel(configuration: Label, text: StandardizedText): Stan
 }
 
 export function extractRow(configuration: Row, text: StandardizedText): StandardizedLine | null {
-    // Logic to find the anchor line and extract the row based on the configuration
+    const { position, tiebreaker, anchor } = configuration;
 
-    // sample output
-    return {
-        text: "Extracted row",
-        boundingPolygon: [
-            { x: 0, y: 0 },
-            { x: 1, y: 0 },
-            { x: 1, y: 1 },
-            { x: 0, y: 1 }
-        ]
+    // 1. First we need to find the anchor line
+    const anchorLineInfo = findLineByText(text.pages, anchor);
+    console.log('Anchor line:', anchorLineInfo?.line);
+    if (!anchorLineInfo) {
+        console.log('Anchor line not found');
+        return null;
     }
+
+    // 2. Based on the direction [position] we need to find the adjacent line
+    const verticalLine = findVerticalLine(text.pages[anchorLineInfo.pageNumber], anchorLineInfo.line, position, tiebreaker);
+    if (!verticalLine) {
+        console.log('Vertical line not found');
+        return null;
+    }
+
+    return verticalLine;
 }
 
 function findLineByText(pages: StandardizedText['pages'], anchor: string): AnchorLineInfo | null {
@@ -70,6 +70,36 @@ const sortFunctions = {
     left: sortLeft,
     right: sortRight
 };
+
+function findVerticalLine(StandardizedPage: StandardizedPage, anchorLine: StandardizedLine, position: HorizontalDirection, tieBreaker: Row['tiebreaker']): StandardizedLine | null {
+    let potentialLines = filterFunctions[position](StandardizedPage, anchorLine);
+    if (potentialLines.length === 0) return null;
+    console.log('Potential lines:', potentialLines);
+
+    // If there is only one line, we return it
+    if (potentialLines.length === 1) return potentialLines[0];
+
+    // Now we filter the potentialLines to get the lines that are closest to the anchor line Y, using a rule of Y +- 0.05, we also assume the reader is reading from top to bottom and left to right so we don't need to sort the lines
+    const anchorY = (anchorLine.boundingPolygon[0].y + anchorLine.boundingPolygon[3].y) / 2;
+    const closerLines = potentialLines.filter(line => {
+        const lineY = (line.boundingPolygon[0].y + line.boundingPolygon[3].y) / 2;
+        return Math.abs(lineY - anchorY) < 0.05;
+    });
+    console.log('Closer lines:', closerLines);
+    
+    if (closerLines.length === 1) return closerLines[0];
+
+    if (closerLines.length === 0) return null;
+    
+    if (tieBreaker === 'last') {
+        return closerLines[closerLines.length - 1];
+    }
+
+    const verticalLine = closerLines[tieBreaker - 1];
+    if (!verticalLine) return null;
+
+    return verticalLine;
+}
 
 function findAdjacentLine(StandardizedPage: StandardizedPage, anchorLine: StandardizedLine, position: Direction, textAlignment: HorizontalDirection): StandardizedLine | null {
     let potentialLines = filterFunctions[position](StandardizedPage, anchorLine);

@@ -1,6 +1,6 @@
 {
-    "id": "label",
-    "position": "below",
-    "textAlignment": "left",
-    "anchor": "Pickup"
+    "id": "row",
+    "position": "right",
+    "tiebreaker": 1,
+    "anchor": "Rate confirmation"
 }

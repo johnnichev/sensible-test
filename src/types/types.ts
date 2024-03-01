@@ -16,7 +16,7 @@ export interface Label extends BaseMethod {
 export interface Row extends BaseMethod {
   id: "row";
   position: HorizontalDirection;
-  tiebreaker: "first" | "second" | "last";
+  tiebreaker: number | "last";
   anchor: string;
 }
 
@@ -45,3 +45,9 @@ export type RowExtractor = (
   configuration: Row,
   text: StandardizedText
 ) => StandardizedLine;
+
+
+export type AnchorLineInfo = {
+  pageNumber: number;
+  line: StandardizedLine;
+}
