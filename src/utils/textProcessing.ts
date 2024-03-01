@@ -1,11 +1,16 @@
 import { Label, StandardizedText, StandardizedLine, Row, Direction, HorizontalDirection, StandardizedPage, AnchorLineInfo } from "../types/types";
 
-
+/**
+ * Extracts a line item from a given text based on a label configuration.
+ * @param configuration The label configuration.
+ * @param text The text to search for the line.
+ * @returns The extracted line item, or null if not found.
+ */
 export function extractLabel(configuration: Label, text: StandardizedText): StandardizedLine | null {
     const { position, textAlignment, anchor } = configuration;
 
     // 1. First we need to find the anchor line
-    const anchorLineInfo = findLineByText(text.pages, anchor);
+    const anchorLineInfo = findAnchorLine(text.pages, anchor);
     console.log('Anchor line:', anchorLineInfo?.line);
     if (!anchorLineInfo) {
         console.log('Anchor line not found');
@@ -22,11 +27,18 @@ export function extractLabel(configuration: Label, text: StandardizedText): Stan
     return adjacentLine;
 }
 
+/**
+ * Extracts a line item from the given text based on the provided configuration.
+ * 
+ * @param configuration - The configuration object specifying the row properties.
+ * @param text - The text containing the pages and lines.
+ * @returns The extracted line item, or null if not found.
+ */
 export function extractRow(configuration: Row, text: StandardizedText): StandardizedLine | null {
     const { position, tiebreaker, anchor } = configuration;
 
     // 1. First we need to find the anchor line
-    const anchorLineInfo = findLineByText(text.pages, anchor);
+    const anchorLineInfo = findAnchorLine(text.pages, anchor);
     console.log('Anchor line:', anchorLineInfo?.line);
     if (!anchorLineInfo) {
         console.log('Anchor line not found');
@@ -43,7 +55,14 @@ export function extractRow(configuration: Row, text: StandardizedText): Standard
     return verticalLine;
 }
 
-function findLineByText(pages: StandardizedText['pages'], anchor: string): AnchorLineInfo | null {
+/**
+ * Finds the anchor line in the given pages of the text.
+ * 
+ * @param pages - The pages of text.
+ * @param anchor - The anchor text to search for.
+ * @returns The information about the anchor line, including the page number and the line, or null if the anchor line is not found.
+ */
+export function findAnchorLine(pages: StandardizedText['pages'], anchor: string): AnchorLineInfo | null {
     // We take into account the upper and lower case of the anchor text
     let pageNumber = -1;
     for (const page of pages) {
@@ -59,19 +78,16 @@ function findLineByText(pages: StandardizedText['pages'], anchor: string): Ancho
     return null;
 }
 
-const filterFunctions = {
-    above: filterPositionAbove,
-    below: filterPositionBelow,
-    left: filterPositionLeft,
-    right: filterPositionRight
-};
-
-const sortFunctions = {
-    left: sortLeft,
-    right: sortRight
-};
-
-function findVerticalLine(StandardizedPage: StandardizedPage, anchorLine: StandardizedLine, position: HorizontalDirection, tieBreaker: Row['tiebreaker']): StandardizedLine | null {
+/**
+ * Finds a vertical line relative to an anchor line in a standardized page.
+ * 
+ * @param StandardizedPage - The page object with the lines.
+ * @param anchorLine - The anchor line to find the vertical line relative to.
+ * @param position - The horizontal direction to search for the vertical line.
+ * @param tieBreaker - The tiebreaker rule to use when multiple lines are found.
+ * @returns The closest vertical line to the anchor line based on the given parameters, or null if no line is found.
+ */
+export function findVerticalLine(StandardizedPage: StandardizedPage, anchorLine: StandardizedLine, position: HorizontalDirection, tieBreaker: Row['tiebreaker']): StandardizedLine | null {
     let potentialLines = filterFunctions[position](StandardizedPage, anchorLine);
     if (potentialLines.length === 0) return null;
     console.log('Potential lines:', potentialLines);
@@ -101,7 +117,16 @@ function findVerticalLine(StandardizedPage: StandardizedPage, anchorLine: Standa
     return verticalLine;
 }
 
-function findAdjacentLine(StandardizedPage: StandardizedPage, anchorLine: StandardizedLine, position: Direction, textAlignment: HorizontalDirection): StandardizedLine | null {
+/**
+ * Finds the adjacent line based on the given parameters.
+ * 
+ * @param StandardizedPage - The page object with the lines.
+ * @param anchorLine - The anchor line to find adjacent lines from.
+ * @param position - The direction of the adjacent lines (above, below, right, left).
+ * @param textAlignment - The horizontal direction of the text alignment (left, right).
+ * @returns The closest line adjacent to the anchor line, or null if no adjacent line is found.
+ */
+export function findAdjacentLine(StandardizedPage: StandardizedPage, anchorLine: StandardizedLine, position: Direction, textAlignment: HorizontalDirection): StandardizedLine | null {
     let potentialLines = filterFunctions[position](StandardizedPage, anchorLine);
     let closerLines = potentialLines;
 
@@ -151,7 +176,25 @@ function findAdjacentLine(StandardizedPage: StandardizedPage, anchorLine: Standa
     return sortedLines[0];
 }
 
-function sortLeft(lines: StandardizedLine[], anchorLeftX: number): StandardizedLine[] {
+const sortFunctions = {
+    left: sortLeft,
+    right: sortRight
+};
+
+const filterFunctions = {
+    above: filterPositionAbove,
+    below: filterPositionBelow,
+    left: filterPositionLeft,
+    right: filterPositionRight
+};
+
+/**
+ * Sorts an array of lines based on their distance to the anchorLeftX.
+ * @param lines - The array of lines to be sorted.
+ * @param anchorLeftX - The X-coordinate of the anchor point.
+ * @returns The sorted array of lines.
+ */
+export function sortLeft(lines: StandardizedLine[], anchorLeftX: number): StandardizedLine[] {
     // Simplified sorting based on the distance to the anchorLeftX
     return lines.sort((a, b) => {
         const rightA = Math.max(...a.boundingPolygon.map(point => point.x)); // Rightmost X of line A
@@ -160,7 +203,13 @@ function sortLeft(lines: StandardizedLine[], anchorLeftX: number): StandardizedL
     });
 }
 
-function sortRight(lines: StandardizedLine[], anchorRightX: number): StandardizedLine[] {
+/**
+ * Sorts an array of lines based on their distance to the anchorRightX.
+ * @param lines - The array of lines to be sorted.
+ * @param anchorRightX - The x-coordinate of the anchor point.
+ * @returns The sorted array of lines.
+ */
+export function sortRight(lines: StandardizedLine[], anchorRightX: number): StandardizedLine[] {
     // Simplified sorting based on the distance to the anchorRightX
     return lines.sort((a, b) => {
         const leftA = Math.min(...a.boundingPolygon.map(point => point.x)); // Leftmost X of line A
@@ -169,28 +218,56 @@ function sortRight(lines: StandardizedLine[], anchorRightX: number): Standardize
     });
 }
 
-function filterPositionBelow(standardizedPage: StandardizedPage, anchorLine: StandardizedLine): StandardizedLine[] {
+/**
+ * Filters the lines below the anchor line.
+ * 
+ * @param standardizedPage - The page containing the lines.
+ * @param anchorLine - The anchor line to compare against.
+ * @returns An array of lines below the anchor line.
+ */
+export function filterPositionBelow(standardizedPage: StandardizedPage, anchorLine: StandardizedLine): StandardizedLine[] {
     const anchorBottomY = anchorLine.boundingPolygon[3].y; // Bottom-left
     
-    return standardizedPage.lines.filter(line => line.boundingPolygon[0].y > anchorBottomY)
+    return standardizedPage.lines.filter(line => line.boundingPolygon[0].y >= anchorBottomY)
 }
 
-function filterPositionAbove(standardizedPage: StandardizedPage, anchorLine: StandardizedLine): StandardizedLine[] {
+/**
+ * Filters the lines above the anchor line.
+ * 
+ * @param standardizedPage - The page containing the lines.
+ * @param anchorLine - The anchor line to compare against.
+ * @returns An array of lines above the anchor line.
+ */
+export function filterPositionAbove(standardizedPage: StandardizedPage, anchorLine: StandardizedLine): StandardizedLine[] {
     const anchorTopY = anchorLine.boundingPolygon[0].y; // Top-left
 
     return standardizedPage.lines.filter(line => {
-        return line.boundingPolygon[3].y < anchorTopY;
+        return line.boundingPolygon[3].y <= anchorTopY;
     })
 }
 
-function filterPositionRight(standardizedPage: StandardizedPage, anchorLine: StandardizedLine): StandardizedLine[] {
-    const anchorRightX = Math.max(...anchorLine.boundingPolygon.map(point => point.x)); // Rightmost X of the anchor
+/**
+ * Filters the lines to the right of the anchor line.
+ * 
+ * @param standardizedPage - The page containing the lines.
+ * @param anchorLine - The anchor line to compare against.
+ * @returns An array of lines to the right of the anchor line.
+ */
+export function filterPositionRight(standardizedPage: StandardizedPage, anchorLine: StandardizedLine): StandardizedLine[] {
+    const anchorRightX = anchorLine.boundingPolygon[1].x // Rightmost X of the anchor
 
-    return standardizedPage.lines.filter(line => Math.min(...line.boundingPolygon.map(point => point.x)) > anchorRightX)
+    return standardizedPage.lines.filter(line => Math.min(...line.boundingPolygon.map(point => point.x)) >= anchorRightX)
 }
 
-function filterPositionLeft(standardizedPage: StandardizedPage, anchorLine: StandardizedLine): StandardizedLine[] {
-    const anchorLeftX = Math.min(...anchorLine.boundingPolygon.map(point => point.x)); // Leftmost X of the anchor
+/**
+ * Filters the lines to the left of the anchor line.
+ * 
+ * @param standardizedPage - The page containing the lines.
+ * @param anchorLine - The anchor line to compare against.
+ * @returns An array of lines to the left of the anchor line.
+ */
+export function filterPositionLeft(standardizedPage: StandardizedPage, anchorLine: StandardizedLine): StandardizedLine[] {
+    const anchorLeftX = anchorLine.boundingPolygon[0].x // Leftmost X of the anchor
 
-    return standardizedPage.lines.filter(line => Math.max(...line.boundingPolygon.map(point => point.x)) < anchorLeftX)
+    return standardizedPage.lines.filter(line => Math.max(...line.boundingPolygon.map(point => point.x)) <= anchorLeftX)
 }

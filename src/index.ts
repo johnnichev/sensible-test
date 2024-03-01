@@ -6,12 +6,12 @@ function isLabel(input: Label | Row): input is Label {
   return input.id === 'label';
 }
 
-function getInputFromFile(filePath: string): Label | Row {
+export function getInputFromFile(filePath: string): Label | Row {
   const fileContent = readFileSync(filePath, 'utf8');
   return JSON.parse(fileContent);
 }
 
-function loadStandardizedText(filePath: string): StandardizedText {
+export function loadStandardizedText(filePath: string): StandardizedText {
   const fileContent = readFileSync(filePath, 'utf8');
   return JSON.parse(fileContent) as StandardizedText;
 }
@@ -42,4 +42,6 @@ function main() {
   }
 }
 
-main();
+if (process.env.NODE_ENV !== 'test') {
+  main();
+}

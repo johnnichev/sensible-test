@@ -4,6 +4,9 @@ node_modules/
 # Compiled JavaScript
 dist/
 
+# Tests
+coverage/
+
 # Environment variables
 .env
 
