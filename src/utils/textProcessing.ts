@@ -59,108 +59,83 @@ function findLineByText(pages: StandardizedText['pages'], anchor: string): Ancho
     return null;
 }
 
-function findAdjacentLine(StandardizedPage: StandardizedPage, anchorLine: StandardizedLine, position: Direction, textAlignement: HorizontalDirection): StandardizedLine | null {
-    let potentialLines: StandardizedLine[] = [];
-    
-    if (position === 'above') {
-        potentialLines = filterPositionAbove(StandardizedPage, anchorLine);
-    }
+const filterFunctions = {
+    above: filterPositionAbove,
+    below: filterPositionBelow,
+    left: filterPositionLeft,
+    right: filterPositionRight
+};
 
-    if (position === 'below') {
-        potentialLines = filterPositionBelow(StandardizedPage, anchorLine);
-    }
+const sortFunctions = {
+    left: sortLeft,
+    right: sortRight
+};
 
-    if (position === 'right') {
-        potentialLines = filterPositionRight(StandardizedPage, anchorLine);
-    }
-
-    if (position === 'left') {
-        potentialLines = filterPositionLeft(StandardizedPage, anchorLine);
-    }
+function findAdjacentLine(StandardizedPage: StandardizedPage, anchorLine: StandardizedLine, position: Direction, textAlignment: HorizontalDirection): StandardizedLine | null {
+    let potentialLines = filterFunctions[position](StandardizedPage, anchorLine);
+    let closerLines = potentialLines;
 
     if (potentialLines.length === 0) return null;
 
-    if (textAlignement === 'left') {
-        // Here we get the leftmost X of the anchor
-        const anchorLeftX = Math.min(...anchorLine.boundingPolygon.map(point => point.x));
-        potentialLines = sortLeft(potentialLines, anchorLeftX);
-    }
+    console.log('Potential lines:', potentialLines);
 
-    if (textAlignement === 'right') {
-        // Here we get the rightmost X of the anchor
-        const anchorRightX = Math.max(...anchorLine.boundingPolygon.map(point => point.x));
-        potentialLines = sortRight(potentialLines, anchorRightX);
-    }
+    // Determine anchor X
+    const anchorX = textAlignment === 'left' 
+        ? Math.min(...anchorLine.boundingPolygon.map(point => point.x)) 
+        : Math.max(...anchorLine.boundingPolygon.map(point => point.x));
 
-    // After filtering and sorting, we need to ensure that the first element of the array is the one we want to return
-    // For that we will now check the position and use as a parameter to select the correct line
-
+    // We want the three elements closest to the anchor top
     if (position === 'above') {
-        return potentialLines[potentialLines.length - 1];
-    }
-
-    if (position === 'below') {
-        return potentialLines[0];
-    }
-
-    // if position is right, we want the element with X closest to the anchor right but also closest to the anchor bottom Y
-    if (position === 'right') {
-        const anchorRightX = Math.max(...anchorLine.boundingPolygon.map(point => point.x)); // Rightmost X of the anchor
-        potentialLines = potentialLines.sort((a, b) => {
-            return Math.abs(a.boundingPolygon[0].x - anchorRightX) - Math.abs(b.boundingPolygon[0].x - anchorRightX);
-        });
-
-        const anchorBottomY = anchorLine.boundingPolygon[1].y; // Top-right
-        potentialLines = potentialLines.sort((a, b) => {
-            return Math.abs(a.boundingPolygon[0].y - anchorBottomY) - Math.abs(b.boundingPolygon[0].y - anchorBottomY);
-        });
-    }
-
-    // if position is left, we want the element with X closest to the anchor left but also closest to the anchor top Y
-    if (position === 'left') {
-        const anchorLeftX = Math.min(...anchorLine.boundingPolygon.map(point => point.x)); // Leftmost X of the anchor
-        potentialLines = potentialLines.sort((a, b) => {
-            return Math.abs(a.boundingPolygon[1].x - anchorLeftX) - Math.abs(b.boundingPolygon[1].x - anchorLeftX);
-        });
-
         const anchorTopY = anchorLine.boundingPolygon[0].y; // Top-left
-        potentialLines = potentialLines.sort((a, b) => {
-            return Math.abs(a.boundingPolygon[1].y - anchorTopY) - Math.abs(b.boundingPolygon[1].y - anchorTopY);
-        });
+        closerLines = potentialLines.sort((a, b) => {
+            return Math.abs(a.boundingPolygon[3].y - anchorTopY) - Math.abs(b.boundingPolygon[3].y - anchorTopY);
+        }).slice(0, 3);
     }
 
-    return potentialLines[0];
+    // We want the three elements closest to the anchor bottom
+    if (position === 'below') {
+        const anchorBottomY = anchorLine.boundingPolygon[3].y; // Bottom-left
+        closerLines = potentialLines.sort((a, b) => {
+            return Math.abs(a.boundingPolygon[0].y - anchorBottomY) - Math.abs(b.boundingPolygon[0].y - anchorBottomY);
+        }).slice(0, 3);
+    }
+
+    // We want the three elements closest to the anchor right
+    if (position === 'right') {
+        closerLines = potentialLines.sort((a, b) => {
+            return Math.abs(a.boundingPolygon[0].x - anchorX) - Math.abs(b.boundingPolygon[0].x - anchorX);
+        }).slice(0, 3);
+    }
+
+    // We want the three elements closest to the anchor left
+    if (position === 'left') {
+        closerLines = potentialLines.sort((a, b) => {
+            return Math.abs(a.boundingPolygon[1].x - anchorX) - Math.abs(b.boundingPolygon[1].x - anchorX);
+        }).slice(0, 3);
+    }
+
+    //  We sort the lines based on the textAlignment and return the closest line
+    const sortedLines = sortFunctions[textAlignment](closerLines, anchorX);
+    console.log('Sorted lines:', sortedLines);
+
+    return sortedLines[0];
 }
 
 function sortLeft(lines: StandardizedLine[], anchorLeftX: number): StandardizedLine[] {
-    // Sort lines based on the closest X of their first or last polygon point to the anchorLeftX
+    // Simplified sorting based on the distance to the anchorLeftX
     return lines.sort((a, b) => {
-        // Extract the X coordinates of the first and last points for both lines
-        const xPointsA = [a.boundingPolygon[0].x, a.boundingPolygon[a.boundingPolygon.length - 1].x];
-        const xPointsB = [b.boundingPolygon[0].x, b.boundingPolygon[b.boundingPolygon.length - 1].x];
-
-        // Find the point (first or last) closest to the anchorLeftX for each line
-        const closestXA = xPointsA.reduce((prev, curr) => Math.abs(curr - anchorLeftX) < Math.abs(prev - anchorLeftX) ? curr : prev);
-        const closestXB = xPointsB.reduce((prev, curr) => Math.abs(curr - anchorLeftX) < Math.abs(prev - anchorLeftX) ? curr : prev);
-
-        // Sort lines by comparing which line's closest point is nearer to the anchorLeftX
-        return Math.abs(closestXA - anchorLeftX) - Math.abs(closestXB - anchorLeftX);
+        const rightA = Math.max(...a.boundingPolygon.map(point => point.x)); // Rightmost X of line A
+        const rightB = Math.max(...b.boundingPolygon.map(point => point.x)); // Rightmost X of line B
+        return Math.abs(rightA - anchorLeftX) - Math.abs(rightB - anchorLeftX);
     });
 }
 
 function sortRight(lines: StandardizedLine[], anchorRightX: number): StandardizedLine[] {
-    // Sort lines based on the closest point (first or last) of their bounding polygon to the anchorRightX
+    // Simplified sorting based on the distance to the anchorRightX
     return lines.sort((a, b) => {
-        // Extract the X coordinates of the second and third points for both lines
-        const xPointsA = [a.boundingPolygon[1].x, a.boundingPolygon[a.boundingPolygon.length - 2].x];
-        const xPointsB = [b.boundingPolygon[1].x, b.boundingPolygon[b.boundingPolygon.length - 2].x];
-        
-        // Determine the closest point to the anchorRightX for each line
-        const closestXA = xPointsA.reduce((prev, curr) => Math.abs(curr - anchorRightX) < Math.abs(prev - anchorRightX) ? curr : prev);
-        const closestXB = xPointsB.reduce((prev, curr) => Math.abs(curr - anchorRightX) < Math.abs(prev - anchorRightX) ? curr : prev);
-
-        // Compare which line's closest point is nearer to the anchorRightX
-        return Math.abs(closestXA - anchorRightX) - Math.abs(closestXB - anchorRightX);
+        const leftA = Math.min(...a.boundingPolygon.map(point => point.x)); // Leftmost X of line A
+        const leftB = Math.min(...b.boundingPolygon.map(point => point.x)); // Leftmost X of line B
+        return Math.abs(leftA - anchorRightX) - Math.abs(leftB - anchorRightX);
     });
 }
 
